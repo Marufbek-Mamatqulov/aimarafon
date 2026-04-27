@@ -163,3 +163,10 @@ npm run dev
 - `leaderboard` is a materialized view with rank calculation.
 - Without Supabase credentials in `.env.local`, app works in demo fallback mode for UI preview.
 - With Supabase credentials configured, admin routes are protected by staff role check (`expert` or `admin`).
+
+## VPS Continue Docs
+
+- Copilot continuation prompt: `docs/COPILOT_VPS_PROMPT_UZ.md`
+- Step-by-step VPS checklist: `docs/VPS_DEPLOYMENT_CHECKLIST.md`
+- PM2 config template: `deploy/ecosystem.config.cjs`
+- Nginx config template: `deploy/nginx.aimarafon.conf.example`
