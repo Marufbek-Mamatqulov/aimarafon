@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/ai-grade/worker",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

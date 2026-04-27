@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 15 23 42;
+  --foreground: 226 232 240;
+  --card: 17 25 46;
+  --card-foreground: 241 245 249;
+  --border: 71 85 105;
+  --primary: 15 23 42;
+  --secondary: 168 85 247;
+  --accent: 34 211 238;
+  --muted: 30 41 59;
+}
+
+* {
+  @apply border-border;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.2), transparent 28%),
+    radial-gradient(circle at 85% 8%, rgba(34, 211, 238, 0.14), transparent 26%),
+    linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(8, 14, 28, 1) 100%);
+}
+
+main {
+  @apply mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
+}
+
+.card-glow {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.08), 0 18px 50px rgba(2, 8, 23, 0.65);
+}
+
+.metric-number {
+  @apply text-2xl font-semibold tracking-tight text-white sm:text-3xl;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  animation: reveal-up 0.5s ease-out both;
+}
+
+.reveal-delay-1 {
+  animation-delay: 0.1s;
+}
