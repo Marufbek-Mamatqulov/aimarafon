@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.20.0",
+    "@hookform/resolvers": "^3.6.0",
+    "@supabase/ssr": "^0.4.1",
     "@supabase/supabase-js": "^2.49.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -19,9 +21,11 @@
     "openai": "^4.80.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.52.1",
     "recharts": "^2.15.1",
     "tailwind-merge": "^2.6.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",

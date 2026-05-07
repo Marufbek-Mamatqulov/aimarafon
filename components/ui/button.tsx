@@ -11,6 +11,7 @@ const buttonVariants = cva(
         default: "bg-cyan-400/20 text-cyan-100 hover:bg-cyan-400/30",
         secondary: "bg-purple-400/20 text-purple-100 hover:bg-purple-400/35",
         outline: "border border-cyan-300/30 bg-transparent text-cyan-200 hover:bg-cyan-400/10",
+        ghost: "bg-transparent text-slate-700 hover:bg-slate-100",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -27,17 +28,30 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+}
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, type = "button", ...props }, ref) => {
+  ({ className, variant, size, type = "button", asChild = false, children, ...props }, ref) => {
+    const classes = cn(buttonVariants({ variant, size, className }));
+
+    if (asChild && React.isValidElement(children)) {
+      return React.cloneElement(children, {
+        ...props,
+        className: cn((children.props as { className?: string }).className, classes),
+      });
+    }
+
     return (
       <button
         ref={ref}
         type={type}
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={classes}
         {...props}
-      />
+      >
+        {children}
+      </button>
     );
   },
 );

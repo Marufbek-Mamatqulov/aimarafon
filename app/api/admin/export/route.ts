@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
             email: "demo@aimarafon.uz",
             phone: "+998901112233",
             region: "Buxoro",
-            workplace: "Demo School",
+            organization: "Demo School",
+            participant_code: "AI-2026-000001",
             role: "participant",
             created_at: new Date().toISOString(),
           },
@@ -58,13 +59,14 @@ export async function GET(request: NextRequest) {
         [
           {
             id: "demo-sub-1",
-            user_id: "demo-user",
+            participant_id: "demo-user",
             task_id: "task-day-1",
             prompt_text: "Siz metodistsiz. 45 daqiqalik dars rejasi yozing...",
-            work_link: "https://gamma.app/demo-day-1",
+            result_url: "https://gamma.app/demo-day-1",
             file_url: null,
-            status: "graded",
+            status: "ai_evaluated",
             submitted_at: new Date().toISOString(),
+            is_late: false,
           },
         ],
         "submissions",
@@ -77,17 +79,23 @@ export async function GET(request: NextRequest) {
       [
         {
           rank: 1,
-          total_points: 264,
-          user_id: "u1",
+          total_score: 612,
+          participant_id: "u1",
+          participant_code: "AI-2026-000001",
           full_name: "Nodira Karimova",
           region: "Samarqand",
+          organization: "Samarqand pedagogika",
+          completed_tasks_count: 7,
         },
         {
           rank: 23,
-          total_points: 88,
-          user_id: "demo-user",
+          total_score: 88,
+          participant_id: "demo-user",
+          participant_code: "AI-2026-000023",
           full_name: "Demo Participant",
           region: "Buxoro",
+          organization: "Demo School",
+          completed_tasks_count: 1,
         },
       ],
       "final_results",
@@ -107,7 +115,7 @@ export async function GET(request: NextRequest) {
   if (entity === "users") {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, email, phone, region, workplace, role, created_at")
+      .select("id, full_name, email, phone, region, organization, participant_code, role, created_at")
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -122,7 +130,7 @@ export async function GET(request: NextRequest) {
   if (entity === "submissions") {
     const { data, error } = await supabase
       .from("submissions")
-      .select("id, user_id, task_id, prompt_text, work_link, file_url, status, submitted_at")
+      .select("id, participant_id, task_id, prompt_text, result_url, file_url, status, submitted_at, is_late")
       .order("submitted_at", { ascending: true });
 
     if (error) {
@@ -138,41 +146,27 @@ export async function GET(request: NextRequest) {
   }
 
   if (entity === "results") {
-    const [{ data: leaderboard, error: leaderboardError }, { data: profiles, error: profilesError }] =
-      await Promise.all([
-        supabase.from("leaderboard").select("user_id, total_points, rank").order("rank"),
-        supabase.from("profiles").select("id, full_name, region"),
-      ]);
+    const { data: leaderboard, error: leaderboardError } = await supabase
+      .from("leaderboard_view")
+      .select(
+        "participant_id, participant_code, full_name, region, organization, total_score, completed_tasks_count, rank",
+      )
+      .order("rank");
 
-    if (leaderboardError || profilesError) {
-      return NextResponse.json(
-        {
-          error: leaderboardError?.message || profilesError?.message || "Failed to export",
-        },
-        { status: 500 },
-      );
+    if (leaderboardError) {
+      return NextResponse.json({ error: leaderboardError.message }, { status: 500 });
     }
 
-    const profileMap = new Map(
-      (profiles ?? []).map((profile) => [
-        String(profile.id),
-        {
-          full_name: profile.full_name,
-          region: profile.region,
-        },
-      ]),
-    );
-
-    const rows = (leaderboard ?? []).map((entry) => {
-      const profile = profileMap.get(String(entry.user_id));
-      return {
-        rank: entry.rank,
-        total_points: entry.total_points,
-        user_id: entry.user_id,
-        full_name: profile?.full_name ?? "",
-        region: profile?.region ?? "",
-      };
-    });
+    const rows = (leaderboard ?? []).map((entry) => ({
+      rank: entry.rank,
+      total_score: entry.total_score,
+      participant_id: entry.participant_id,
+      participant_code: entry.participant_code,
+      full_name: entry.full_name,
+      region: entry.region,
+      organization: entry.organization,
+      completed_tasks_count: entry.completed_tasks_count,
+    }));
 
     const buffer = buildWorkbook(rows as Record<string, unknown>[], "final_results");
 

@@ -115,10 +115,11 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       registrationsResult,
       submissionsResult,
       gradedResult,
-      dayStatsResult,
-      regionStatsResult,
+      tasksResult,
+      submissionsForStatsResult,
+      regionalResult,
       queueResult,
-      plagiarismResult,
+      plagiarismSourceResult,
     ] = await Promise.all([
       supabase
         .from("profiles")
@@ -128,42 +129,119 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       supabase
         .from("submissions")
         .select("id", { count: "exact", head: true })
-        .eq("status", "graded"),
+        .in("status", ["ai_evaluated", "expert_reviewed", "approved"]),
+      supabase.from("tasks").select("id, day_number").order("day_number"),
+      supabase.from("submissions").select("id, task_id, status, submitted_at"),
       supabase
-        .from("daily_submission_stats")
-        .select("day_number, submissions_count")
-        .order("day_number"),
+        .from("profiles")
+        .select("region")
+        .eq("role", "participant"),
       supabase
-        .from("regional_participation_stats")
-        .select("region, participant_count")
-        .order("participant_count", { ascending: false }),
-      supabase
-        .from("admin_grading_queue")
+        .from("submissions")
         .select(
-          "submission_id, participant_name, region, task_title, day_number, ai_score, status, submitted_at",
+          "id, status, submitted_at, participant:profiles(full_name, region), task:tasks(title, day_number), evaluation:evaluations(total_score)",
         )
-        .order("ai_score", { ascending: false })
+        .order("submitted_at", { ascending: false })
         .limit(15),
-      supabase
-        .from("plagiarism_flags")
-        .select("source_type, duplicated_value, duplicate_count, submission_ids")
-        .order("duplicate_count", { ascending: false })
-        .limit(25),
+      supabase.from("submissions").select("id, prompt_text, result_url").limit(200),
     ]);
 
     if (
       registrationsResult.error ||
       submissionsResult.error ||
       gradedResult.error ||
-      dayStatsResult.error ||
-      regionStatsResult.error ||
+      tasksResult.error ||
+      submissionsForStatsResult.error ||
+      regionalResult.error ||
       queueResult.error ||
-      plagiarismResult.error
+      plagiarismSourceResult.error
     ) {
       return fallbackDashboardData;
     }
 
-    const plagiarismFlags = parsePlagiarismFlags(plagiarismResult.data ?? null);
+    const taskMap = new Map<string, number>();
+    for (const task of tasksResult.data ?? []) {
+      taskMap.set(String(task.id), Number(task.day_number ?? 0));
+    }
+
+    const submissionsByDay = new Map<number, number>();
+    for (const submission of submissionsForStatsResult.data ?? []) {
+      const dayNumber = taskMap.get(String(submission.task_id ?? "")) ?? 0;
+      if (dayNumber > 0) {
+        submissionsByDay.set(dayNumber, (submissionsByDay.get(dayNumber) ?? 0) + 1);
+      }
+    }
+
+    const regionalCounts = new Map<string, number>();
+    for (const profile of regionalResult.data ?? []) {
+      const region = String(profile.region ?? "Noma'lum");
+      regionalCounts.set(region, (regionalCounts.get(region) ?? 0) + 1);
+    }
+
+    const gradingQueue: GradingQueueItem[] = (queueResult.data ?? []).map((row) => {
+      const participant = Array.isArray(row.participant) ? row.participant[0] : row.participant;
+      const task = Array.isArray(row.task) ? row.task[0] : row.task;
+      const evaluation = Array.isArray(row.evaluation) ? row.evaluation[0] : row.evaluation;
+      const status =
+        row.status === "ai_evaluated" || row.status === "expert_reviewed" || row.status === "approved"
+          ? "graded"
+          : "pending";
+
+      return {
+        submissionId: String(row.id ?? ""),
+        participantName: String(participant?.full_name ?? "Ismsiz"),
+        region: String(participant?.region ?? "Noma'lum"),
+        taskTitle: String(task?.title ?? "Topshiriq"),
+        dayNumber: Number(task?.day_number ?? 0),
+        aiScore: Number(evaluation?.total_score ?? 0),
+        status,
+        submittedAt: String(row.submitted_at ?? new Date().toISOString()),
+      };
+    });
+
+    const plagiarismFlags: PlagiarismFlagItem[] = [];
+    const promptMap = new Map<string, string[]>();
+    const linkMap = new Map<string, string[]>();
+
+    for (const item of plagiarismSourceResult.data ?? []) {
+      const promptKey = String(item.prompt_text ?? "").slice(0, 300).trim();
+      if (promptKey.length > 0) {
+        const bucket = promptMap.get(promptKey) ?? [];
+        bucket.push(String(item.id));
+        promptMap.set(promptKey, bucket);
+      }
+
+      const linkKey = String(item.result_url ?? "").trim();
+      if (linkKey.length > 0) {
+        const bucket = linkMap.get(linkKey) ?? [];
+        bucket.push(String(item.id));
+        linkMap.set(linkKey, bucket);
+      }
+    }
+
+    for (const [value, ids] of linkMap.entries()) {
+      if (ids.length > 1) {
+        plagiarismFlags.push({
+          sourceType: "work_link",
+          duplicatedValue: value,
+          duplicateCount: ids.length,
+          submissionIds: ids,
+        });
+      }
+    }
+
+    for (const [value, ids] of promptMap.entries()) {
+      if (ids.length > 1) {
+        plagiarismFlags.push({
+          sourceType: "prompt_text",
+          duplicatedValue: value,
+          duplicateCount: ids.length,
+          submissionIds: ids,
+        });
+      }
+    }
+
+    plagiarismFlags.sort((a, b) => b.duplicateCount - a.duplicateCount);
 
     return {
       stats: {
@@ -172,16 +250,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         graded: gradedResult.count ?? 0,
         plagiarismFlags: plagiarismFlags.length,
       },
-      submissionsByDay: (dayStatsResult.data ?? []).map((row) => ({
-        dayNumber: Number(row.day_number ?? 0),
-        submissions: Number(row.submissions_count ?? 0),
-      })),
-      regionalParticipation: (regionStatsResult.data ?? []).map((row) => ({
-        region: String(row.region ?? "Noma'lum"),
-        participants: Number(row.participant_count ?? 0),
-      })),
-      gradingQueue: parseQueueItems(queueResult.data ?? null),
-      plagiarismFlags,
+      submissionsByDay: Array.from(submissionsByDay.entries())
+        .map(([dayNumber, submissions]) => ({ dayNumber, submissions }))
+        .sort((a, b) => a.dayNumber - b.dayNumber),
+      regionalParticipation: Array.from(regionalCounts.entries())
+        .map(([region, participants]) => ({ region, participants }))
+        .sort((a, b) => b.participants - a.participants),
+      gradingQueue,
+      plagiarismFlags: plagiarismFlags.slice(0, 25),
     };
   } catch {
     return fallbackDashboardData;

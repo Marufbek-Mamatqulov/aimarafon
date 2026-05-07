@@ -3,15 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --background: 15 23 42;
-  --foreground: 226 232 240;
-  --card: 17 25 46;
-  --card-foreground: 241 245 249;
-  --border: 71 85 105;
-  --primary: 15 23 42;
-  --secondary: 168 85 247;
-  --accent: 34 211 238;
-  --muted: 30 41 59;
+  --background: 248 250 252;
+  --foreground: 15 23 42;
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  --border: 226 232 240;
+  --primary: 30 64 175;
+  --secondary: 79 70 229;
+  --accent: 59 130 246;
+  --muted: 241 245 249;
 }
 
 * {
@@ -26,21 +26,21 @@ body {
 body {
   @apply bg-background text-foreground antialiased;
   background-image:
-    radial-gradient(circle at 10% 10%, rgba(168, 85, 247, 0.2), transparent 28%),
-    radial-gradient(circle at 85% 8%, rgba(34, 211, 238, 0.14), transparent 26%),
-    linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(8, 14, 28, 1) 100%);
+    radial-gradient(circle at 6% 10%, rgba(59, 130, 246, 0.16), transparent 40%),
+    radial-gradient(circle at 92% 0%, rgba(99, 102, 241, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(255, 255, 255, 1) 100%);
 }
 
 main {
-  @apply mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
+  @apply mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8;
 }
 
 .card-glow {
-  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.08), 0 18px 50px rgba(2, 8, 23, 0.65);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
 .metric-number {
-  @apply text-2xl font-semibold tracking-tight text-white sm:text-3xl;
+  @apply text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl;
 }
 
 @keyframes reveal-up {

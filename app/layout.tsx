@@ -15,9 +15,9 @@ const bodyFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "aimarafon.uz | Bir haftada AI",
+  title: "Bir haftada AI | Marafon platformasi",
   description:
-    "LMS platform for the 7-day AI skill marathon with participant tracking, grading, and analytics.",
+    "Suniy intellekt boyicha 7 kunlik amaliy marafon uchun rasmiy platforma.",
 };
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz" className="dark">
+    <html lang="uz">
       <body
         className={`${headingFont.variable} ${bodyFont.variable} font-[var(--font-body)]`}
       >

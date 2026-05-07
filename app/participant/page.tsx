@@ -1,11 +1,5 @@
-import { ParticipantDashboard } from "@/components/participant/participant-dashboard";
-
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 export default function ParticipantPage() {
-  return (
-    <main>
-      <ParticipantDashboard />
-    </main>
-  );
+  redirect("/dashboard");
 }
